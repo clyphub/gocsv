@@ -3,6 +3,7 @@ package gocsv
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 )
 
@@ -12,6 +13,28 @@ type decoder struct {
 
 func newDecoder(in io.Reader) *decoder {
 	return &decoder{in}
+}
+
+func (decode *decoder) getCSVRows() ([][]string, error) {
+	return getCSVReader(decode.in).ReadAll()
+}
+
+func maybeMissingStructFields(structInfo []fieldInfo, headers []string) error {
+	if len(structInfo) == 0 {
+		return nil
+	}
+
+	headerMap := make(map[string]struct{}, len(headers))
+	for idx := range headers {
+		headerMap[headers[idx]] = struct{}{}
+	}
+
+	for _, info := range structInfo {
+		if _, ok := headerMap[info.Key]; !ok {
+			return fmt.Errorf("found unmatched struct tag %v", info.Key)
+		}
+	}
+	return nil
 }
 
 func (decode *decoder) readTo(out interface{}) error {
@@ -34,26 +57,34 @@ func (decode *decoder) readTo(out interface{}) error {
 	if len(outInnerStructInfo.Fields) == 0 {
 		return fmt.Errorf("no csv struct tags found")
 	}
+	headers := csvRows[0]
+	body := csvRows[1:]
 
 	csvHeadersLabels := make(map[int]*fieldInfo, len(outInnerStructInfo.Fields)) // Used to store the correspondance header <-> position in CSV
-	for i, csvRow := range csvRows {                                             // Iterate over csv rows
-		if i == 0 { // First line of CSV is the header line
-			for j, csvColumnHeader := range csvRow {
-				if fieldInfo := decode.getCSVFieldPosition(csvColumnHeader, outInnerStructInfo); fieldInfo != nil {
-					csvHeadersLabels[j] = fieldInfo
-				}
-			}
-		} else {
-			outInner := decode.createNewOutInner(outInnerWasPointer, outInnerType)
-			for j, csvColumnContent := range csvRow {
-				if fieldInfo, ok := csvHeadersLabels[j]; ok { // Position found accordingly to header name
-					if err := decode.setInnerField(&outInner, outInnerWasPointer, fieldInfo.Num, csvColumnContent); err != nil { // Set field of struct
-						return err
-					}
-				}
-			}
-			outValue.Index(i - 1).Set(outInner)
+
+	for i, csvColumnHeader := range headers {
+		if fieldInfo := decode.getCSVFieldPosition(csvColumnHeader, outInnerStructInfo); fieldInfo != nil {
+			csvHeadersLabels[i] = fieldInfo
 		}
+	}
+	if err := maybeMissingStructFields(outInnerStructInfo.Fields, headers); err != nil {
+		if FailIfUnmatchedStructTags {
+			return err
+		} else {
+			fmt.Fprintf(os.Stdout, fmt.Sprintf("not all declared csv structtags matched given input header"))
+		}
+	}
+
+	for i, csvRow := range body {
+		outInner := decode.createNewOutInner(outInnerWasPointer, outInnerType)
+		for j, csvColumnContent := range csvRow {
+			if fieldInfo, ok := csvHeadersLabels[j]; ok { // Position found accordingly to header name
+				if err := decode.setInnerField(&outInner, outInnerWasPointer, fieldInfo.Num, csvColumnContent); err != nil { // Set field of struct
+					return err
+				}
+			}
+		}
+		outValue.Index(i).Set(outInner)
 	}
 	return nil
 }
@@ -115,8 +146,4 @@ func (decode *decoder) setInnerField(outInner *reflect.Value, outInnerWasPointer
 		return setField(outInner.Elem().Field(fieldPosition), value)
 	}
 	return setField(outInner.Field(fieldPosition), value)
-}
-
-func (decode *decoder) getCSVRows() ([][]string, error) {
-	return getCSVReader(decode.in).ReadAll()
 }

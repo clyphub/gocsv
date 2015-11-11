@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+var FailIfUnmatchedStructTags = false
+
 // --------------------------------------------------------------------------
 // CSVWriter used to format CSV
 
@@ -113,4 +115,3 @@ func UnmarshalBytes(in []byte, out interface{}) (err error) {
 func Unmarshal(in io.Reader, out interface{}) (err error) {
 	return newDecoder(in).readTo(out)
 }
-
