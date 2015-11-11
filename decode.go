@@ -30,7 +30,11 @@ func (decode *decoder) readTo(out interface{}) error {
 	if err := decode.ensureOutCapacity(&outValue, len(csvRows)); err != nil { // Ensure the container is big enough to hold the CSV content
 		return err
 	}
-	outInnerStructInfo := getStructInfo(outInnerType)                            // Get the inner struct info to get CSV annotations
+	outInnerStructInfo := getStructInfo(outInnerType) // Get the inner struct info to get CSV annotations
+	if len(outInnerStructInfo.Fields) == 0 {
+		return fmt.Errorf("no csv struct tags found")
+	}
+
 	csvHeadersLabels := make(map[int]*fieldInfo, len(outInnerStructInfo.Fields)) // Used to store the correspondance header <-> position in CSV
 	for i, csvRow := range csvRows {                                             // Iterate over csv rows
 		if i == 0 { // First line of CSV is the header line
