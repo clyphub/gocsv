@@ -1,15 +1,33 @@
 package gocsv
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
+
+type MarshallerStruct struct {
+	Foo string
+	Bar int
+}
+
+func (m MarshallerStruct) MarshalCSV() (string, error) {
+	return fmt.Sprintf("%s %d", m.Foo, m.Bar), nil
+}
+
+func (m MarshallerStruct) UnmarshalCSV(s string) error {
+	_, err := fmt.Sscanf("%s %d", s, &m.Foo, &m.Bar)
+	return err
+}
 
 type Sample struct {
-	Foo  string  `csv:"foo"`
-	Bar  int     `csv:"BAR"`
-	Baz  string  `csv:"Baz"`
-	Frop float64 `csv:"Quux"`
-	Blah *int    `csv:"Blah"`
-	SPtr *string `csv:"SPtr"`
-	Omit *string `csv:"Omit,omitempty"`
+	Foo        string           `csv:"foo"`
+	Bar        int              `csv:"BAR"`
+	Baz        string           `csv:"Baz"`
+	Frop       float64          `csv:"Quux"`
+	Blah       *int             `csv:"Blah"`
+	SPtr       *string          `csv:"SPtr"`
+	Marshaller MarshallerStruct `csv:"Marshaller"`
+	Omit       *string          `csv:"Omit,omitempty"`
 }
 
 type EmbedSample struct {
