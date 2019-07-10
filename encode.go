@@ -34,6 +34,15 @@ func writeFromChan(writer *SafeCSVWriter, c <-chan interface{}) error {
 		return err
 	}
 	write := func(val reflect.Value) error {
+		if !val.CanAddr() {
+			// Make an addressable copy
+			//
+			// Admittedly this is a kludge but downstream operations (like reflect.Value.Interface())
+			// require addressability
+			ptr := reflect.New(val.Type())
+			ptr.Elem().Set(val)
+			val = ptr.Elem()
+		}
 		for j, fieldInfo := range inInnerStructInfo.Fields {
 			csvHeadersLabels[j] = ""
 			inInnerFieldValue, err := getInnerField(val, inInnerWasPointer, fieldInfo.IndexChain) // Get the correct field header <-> position

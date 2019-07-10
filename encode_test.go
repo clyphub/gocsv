@@ -219,7 +219,7 @@ func Test_writeToChan(t *testing.T) {
 			assertLine(t, []string{"foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "Omit"}, l)
 			continue
 		}
-		assertLine(t, []string{"f", strconv.Itoa(i - 1), "baz" + strconv.Itoa(i-1), strconv.FormatFloat(float64(i-1), 'f', -1, 64), "", "*string", "", ""}, l)
+		assertLine(t, []string{"f", strconv.Itoa(i - 1), "baz" + strconv.Itoa(i-1), strconv.FormatFloat(float64(i-1), 'f', -1, 64), "", "*string", "foo 1", ""}, l)
 	}
 }
 
