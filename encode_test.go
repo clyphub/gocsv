@@ -12,6 +12,7 @@ import (
 )
 
 func assertLine(t *testing.T, expected, actual []string) {
+	t.Helper()
 	if len(expected) != len(actual) {
 		t.Fatalf("line length mismatch between expected: %d and actual: %d", len(expected), len(actual))
 	}
