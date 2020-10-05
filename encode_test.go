@@ -145,9 +145,9 @@ func Test_writeTo(t *testing.T) {
 	if len(lines) != 3 {
 		t.Fatalf("expected 3 lines, got %d", len(lines))
 	}
-	assertLine(t, []string{"foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "Omit"}, lines[0])
-	assertLine(t, []string{"f", "1", "baz", "0.1", "2", "*string", "foo 1", ""}, lines[1])
-	assertLine(t, []string{"e", "3", "b", "0.46153846153846156", "", "", "foo 2", ""}, lines[2])
+	assertLine(t, []string{"foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller"}, lines[0])
+	assertLine(t, []string{"f", "1", "baz", "0.1", "2", "*string", "foo 1"}, lines[1])
+	assertLine(t, []string{"e", "3", "b", "0.46153846153846156", "", "", "foo 2"}, lines[2])
 }
 
 func Test_writeTo_Time(t *testing.T) {
@@ -199,8 +199,8 @@ func Test_writeTo_NoHeaders(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines, got %d", len(lines))
 	}
-	assertLine(t, []string{"f", "1", "baz", "0.1", "2", "*string", " 0", ""}, lines[0])
-	assertLine(t, []string{"e", "3", "b", "0.46153846153846156", "", "", " 0", ""}, lines[1])
+	assertLine(t, []string{"f", "1", "baz", "0.1", "2", "*string", " 0"}, lines[0])
+	assertLine(t, []string{"e", "3", "b", "0.46153846153846156", "", "", " 0"}, lines[1])
 }
 
 func Test_writeTo_multipleTags(t *testing.T) {
@@ -252,8 +252,8 @@ func Test_writeTo_embed(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines, got %d", len(lines))
 	}
-	assertLine(t, []string{"first", "foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "Omit", "garply", "last"}, lines[0])
-	assertLine(t, []string{"aaa", "f", "1", "baz", "0.2", "2", "*string", " 0", "", "3.141592653589793", "zzz"}, lines[1])
+	assertLine(t, []string{"first", "foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "garply", "last"}, lines[0])
+	assertLine(t, []string{"aaa", "f", "1", "baz", "0.2", "2", "*string", " 0", "3.141592653589793", "zzz"}, lines[1])
 }
 
 func Test_writeTo_complex_embed(t *testing.T) {
@@ -290,8 +290,8 @@ func Test_writeTo_complex_embed(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines, got %d", len(lines))
 	}
-	assertLine(t, []string{"first", "foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "Omit", "garply", "last", "abc"}, lines[0])
-	assertLine(t, []string{"aaa", "bbb", "111", "ddd", "12000000000000000000000", "", "*string", " 0", "", "0.1", "fff", "hhh"}, lines[1])
+	assertLine(t, []string{"first", "foo", "BAR", "Baz", "Quux", "Blah", "SPtr", "Marshaller", "garply", "last", "abc"}, lines[0])
+	assertLine(t, []string{"aaa", "bbb", "111", "ddd", "12000000000000000000000", "", "*string", " 0", "0.1", "fff", "hhh"}, lines[1])
 }
 
 func Test_writeToChan(t *testing.T) {
