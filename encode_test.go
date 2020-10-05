@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"io"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,6 +22,107 @@ func assertLine(t *testing.T, expected, actual []string) {
 			t.Fatalf("mismatch on field %d at line `%s`: %s != %s", i, expected, expected[i], actual[i])
 		}
 	}
+}
+
+func Test_calculateOmitEmpty(t *testing.T) {
+	type MyType struct {
+		Foo string  `csv:"foo"`
+		Bar *string `csv:"bar,omitempty"`
+		Baz string  `csv:"baz"`
+	}
+
+	bar := "bar"
+	setup := func(in interface{}) (*structInfo, reflect.Value, bool, error) {
+		inValue, inType := getConcreteReflectValueAndType(in)
+		if err := ensureInType(inType); err != nil {
+			return nil, reflect.Value{}, false, err
+		}
+		inInnerWasPointer, inInnerType := getConcreteContainerInnerType(inType)
+		if err := ensureInInnerType(inInnerType); err != nil {
+			return nil, reflect.Value{}, false, err
+		}
+		inInnerStructInfo := getStructInfo(inInnerType)
+
+		return inInnerStructInfo, inValue, inInnerWasPointer, nil
+	}
+
+	t.Run("all omitempty fields have value", func(t *testing.T) {
+		sample := []MyType{
+			{"foo", &bar, "baz"},
+			{"foo", &bar, "baz"},
+		}
+		testInfo, val, wasPointer, err := setup(sample)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dut, err := calculateOmitEmpty(len(sample), testInfo, val, wasPointer)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(dut) != 3 {
+			t.Fatalf("length mismatch, expected 3 got %d", len(dut))
+		}
+		expected := []bool{false, false, false}
+		for i := range expected {
+			if expected[i] != dut[i] {
+				t.Fatalf("index %d: expected %v, got %v", i, expected[i], dut[i])
+			}
+		}
+	})
+
+	t.Run("some omitempty fields have value", func(t *testing.T) {
+		sample := []MyType{
+			{"foo", &bar, "baz"},
+			{"foo", nil, "baz"},
+		}
+		testInfo, val, wasPointer, err := setup(sample)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dut, err := calculateOmitEmpty(len(sample), testInfo, val, wasPointer)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(dut) != 3 {
+			t.Fatalf("length mismatch, expected 3 got %d", len(dut))
+		}
+		expected := []bool{false, false, false}
+		for i := range expected {
+			if expected[i] != dut[i] {
+				t.Fatalf("index %d: expected %v, got %v", i, expected[i], dut[i])
+			}
+		}
+	})
+
+	t.Run("no omitempty fields have value", func(t *testing.T) {
+		sample := []MyType{
+			{"foo", nil, "baz"},
+			{"foo", nil, "baz"},
+		}
+		testInfo, val, wasPointer, err := setup(sample)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dut, err := calculateOmitEmpty(len(sample), testInfo, val, wasPointer)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(dut) != 3 {
+			t.Fatalf("length mismatch, expected 3 got %d", len(dut))
+		}
+		expected := []bool{false, true, false}
+		for i := range expected {
+			if expected[i] != dut[i] {
+				t.Fatalf("index %d: expected %v, got %v", i, expected[i], dut[i])
+			}
+		}
+	})
 }
 
 func Test_writeTo(t *testing.T) {

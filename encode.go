@@ -72,6 +72,39 @@ func writeFromChan(writer *SafeCSVWriter, c <-chan interface{}) error {
 	return writer.Error()
 }
 
+// determine whether or not an omitempty field needs to be serialized or
+// not.  If any omitempty "cell" has a value, we want to serialize that
+// column always
+func calculateOmitEmpty(inLen int, structInfo *structInfo, inValue reflect.Value, inInnerWasPointer bool) ([]bool, error) {
+	canSerializeByCol := make([][]bool, len(structInfo.Fields))
+	for i, fieldInfo := range structInfo.Fields {
+		canSerializeByCol[i] = make([]bool, inLen)
+		for j := 0; j < inLen; j++ {
+			inInnerFieldValue, err := getInnerField(inValue.Index(j), inInnerWasPointer, fieldInfo.IndexChain)
+			if err != nil {
+				return nil, err
+			}
+			canSerializeByCol[i][j] = !(fieldInfo.omitEmpty && len(inInnerFieldValue) == 0)
+		}
+	}
+
+	ret := make([]bool, len(structInfo.Fields))
+
+Loop:
+	for i, col := range canSerializeByCol {
+		canSerialize := false
+		for j := range col {
+			if col[j] {
+				canSerialize = true
+				continue Loop
+			}
+		}
+		ret[i] = !canSerialize
+	}
+
+	return ret, nil
+}
+
 func writeTo(writer *SafeCSVWriter, in interface{}, omitHeaders bool) error {
 	inValue, inType := getConcreteReflectValueAndType(in) // Get the concrete type (not pointer) (Slice<?> or Array<?>)
 	if err := ensureInType(inType); err != nil {
