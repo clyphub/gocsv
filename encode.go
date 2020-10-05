@@ -82,26 +82,30 @@ func writeTo(writer *SafeCSVWriter, in interface{}, omitHeaders bool) error {
 		return err
 	}
 	inInnerStructInfo := getStructInfo(inInnerType) // Get the inner struct info to get CSV annotations
-	csvHeadersLabels := make([]string, len(inInnerStructInfo.Fields))
-	for i, fieldInfo := range inInnerStructInfo.Fields { // Used to write the header (first line) in CSV
-		csvHeadersLabels[i] = fieldInfo.getFirstKey()
-	}
+	toWrite := [][]string{}
 	if !omitHeaders {
-		if err := writer.Write(csvHeadersLabels); err != nil {
-			return err
+		csvHeadersLabels := make([]string, len(inInnerStructInfo.Fields))
+		for i, fieldInfo := range inInnerStructInfo.Fields { // Used to write the header (first line) in CSV
+			csvHeadersLabels[i] = fieldInfo.getFirstKey()
 		}
+		toWrite = append(toWrite, csvHeadersLabels)
 	}
 	inLen := inValue.Len()
 	for i := 0; i < inLen; i++ { // Iterate over container rows
+		row := make([]string, len(inInnerStructInfo.Fields))
 		for j, fieldInfo := range inInnerStructInfo.Fields {
-			csvHeadersLabels[j] = ""
+			row[j] = ""
 			inInnerFieldValue, err := getInnerField(inValue.Index(i), inInnerWasPointer, fieldInfo.IndexChain) // Get the correct field header <-> position
 			if err != nil {
 				return err
 			}
-			csvHeadersLabels[j] = inInnerFieldValue
+			row[j] = inInnerFieldValue
 		}
-		if err := writer.Write(csvHeadersLabels); err != nil {
+		toWrite = append(toWrite, row)
+	}
+
+	for _, row := range toWrite {
+		if err := writer.Write(row); err != nil {
 			return err
 		}
 	}
