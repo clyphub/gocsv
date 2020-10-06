@@ -94,7 +94,6 @@ func writeTo(writer *SafeCSVWriter, in interface{}, omitHeaders bool) error {
 	for i := 0; i < inLen; i++ { // Iterate over container rows
 		row := make([]string, len(inInnerStructInfo.Fields))
 		for j, fieldInfo := range inInnerStructInfo.Fields {
-			row[j] = ""
 			inInnerFieldValue, err := getInnerField(inValue.Index(i), inInnerWasPointer, fieldInfo.IndexChain) // Get the correct field header <-> position
 			if err != nil {
 				return err
